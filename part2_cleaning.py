@@ -1,3 +1,11 @@
+# ----------------------------------------------
+# Part 2 – Data Cleaning & Missing Data Overview
+# Lead Contributor: Jonathan Jafari
+# Description: Load main table, convert dtypes,
+#              and generate missing-data summaries
+#              plus coverage statistics.
+# ----------------------------------------------
+
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text

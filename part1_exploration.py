@@ -1,6 +1,8 @@
 # ----------------------------------------------
 # Part 1 – Data Exploration
 # Contributor: Jonathan Jafari
+# Description: Connection test and high-level
+#              data quality / structure overview.
 # ----------------------------------------------
 
 import os
