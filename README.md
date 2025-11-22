@@ -5,3 +5,11 @@
 - Jonathan Jafari
 - Amy Kim
 - Chenkun Xiang
+
+## Screenshots (Evidence of Work)
+
+- **Part 1 – Exploration (Jonathan Jafari)**  
+  ![Part 1 – First 10 Rows](screenshots/part1_exploration_first10rows.png)
+
+- **Part 3 – Individual Athlete Viz (Jonathan Jafari)**  
+  ![Part 3 – PLAYER_680 Jump Height](screenshots/part3_player680_line_plot.png)
