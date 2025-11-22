@@ -1,3 +1,8 @@
+# ----------------------------------------------
+# Part 1 – Data Exploration
+# Contributor: Jonathan Jafari
+# ----------------------------------------------
+
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
