@@ -13,3 +13,8 @@
 
 - **Part 3 – Individual Athlete Viz (Jonathan Jafari)**  
   ![Part 3 – PLAYER_680 Jump Height](screenshots/part3_player680_line_plot.png)
+
+- **Part1 - Exploration (Anthony Mapuyan)**
+  ![Part 1 - First 10 Rows](screenshots/part1_connect.png)
+
+  
