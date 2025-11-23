@@ -11,11 +11,6 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 import pandas as pd
 
-# -------------------------------------------------
-# Part 2 – Data Cleaning & Missing Data Overview
-# Starter script written by Jonathan
-# -------------------------------------------------
-
 # 1. Load environment variables (same as Part 1)
 load_dotenv()
 
