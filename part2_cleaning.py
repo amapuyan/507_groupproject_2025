@@ -191,7 +191,71 @@ inactive_athletes.to_csv("part2_inactive_athletes_6months.csv", index=False)
 print("\nSaved inactive athletes list to 'part2_inactive_athletes_6months.csv'")
 
 # -------------------------------------------------
-# 10. Close the connection
+# 10. Data Transformation: Long to Wide Format
+# Contributor: Anthony Mapuyan
+# -------------------------------------------------
+# -------------------------------------------------
+# 10. Data Transformation: Long → Wide for a Single Player (Part 2.2)
+# -------------------------------------------------
+
+def player_long_to_wide(df_source, player_name, metrics, fill_method=None):
+    """
+    Transform long-format data for a single player into wide format.
+    """
+
+    # 1) Filter to the selected player and metrics
+    player_df = df_source[
+        (df_source["playername"] == player_name) &
+        (df_source["metric"].isin(metrics))
+    ].copy()
+
+    if player_df.empty:
+        print(f"[WARNING] No rows found for player {player_name} with given metrics.")
+        return pd.DataFrame(columns=["timestamp"] + metrics)
+
+    # 2) Convert timestamp and sort
+    player_df["timestamp"] = pd.to_datetime(player_df["timestamp"], errors="coerce")
+    player_df = player_df.sort_values(["timestamp", "metric"])
+
+    # 3) Pivot long → wide
+    wide_df = (
+        player_df
+        .pivot_table(
+            index="timestamp",
+            columns="metric",
+            values="value",
+            aggfunc="mean"
+        )
+        .reset_index()
+        .sort_values("timestamp")
+    )
+
+    # 4) Missing value handling
+    if fill_method == "ffill":
+        wide_df = wide_df.fillna(method="ffill")
+    elif fill_method == "bfill":
+        wide_df = wide_df.fillna(method="bfill")
+    elif fill_method == "zero":
+        wide_df = wide_df.fillna(0)
+
+    # 5) Order columns
+    ordered_cols = ["timestamp"] + [m for m in metrics if m in wide_df.columns]
+    wide_df = wide_df[ordered_cols]
+
+    return wide_df
+
+print("\n--- Testing Part 2.2 on 3 athletes ---")
+
+example_players = df_selected["playername"].unique()[:3]
+
+for p in example_players:
+    print(f"\n===== {p} =====")
+    wide = player_long_to_wide(df_selected, p, SELECTED_METRICS)
+    print(wide.head())
+
+
+# -------------------------------------------------
+# 11. Close the connection
 # -------------------------------------------------
 engine.dispose()
 print("\nConnection closed.")
