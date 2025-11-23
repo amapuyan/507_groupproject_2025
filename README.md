@@ -17,4 +17,5 @@
 - **Part1 - Exploration (Anthony Mapuyan)**
   ![Part 1 - First 10 Rows](screenshots/part1_connect.png)
 
-  
+- **Part 1 - Exploration (Xiao Hong Chen)**
+  ![Part 1 - exploration](screenshots/xiaopt1connect.png)

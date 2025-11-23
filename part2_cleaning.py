@@ -93,15 +93,15 @@ missing_summary.to_csv("part2_missing_summary_overall.csv")
 print("\nSaved overall missing data summary to 'part2_missing_summary_overall.csv'")
 
 # -------------------------------------------------
-# 6. Focus on selected metrics (update with our choices later)
+# 6. Focus on selected metrics (update with our choices later) accel_load_max and distance_total
 # -------------------------------------------------
 
 SELECTED_METRICS = [
     "Jump Height(m)",
-    "Peak Force(N)",
+    "Peak Propulsive Force(N)",
     "mRSI",
-    "Accel Load",
-    "Sprint Distance Total",
+    "accel_load_max",
+    "distance_total",
 ]
 
 df_selected = df[df["metric"].isin(SELECTED_METRICS)].copy()

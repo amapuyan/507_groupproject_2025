@@ -27,3 +27,6 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# xiao's practice file
+xiaopracticefolder/
