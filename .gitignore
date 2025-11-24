@@ -24,6 +24,12 @@ __pycache__/
 *.swp
 *.swo
 
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -33,3 +39,6 @@ xiaopracticefolder/
 
 # amy's practice file
 amypracticefolder/
+
+# chen's practice file
+chenpracticefolder/
