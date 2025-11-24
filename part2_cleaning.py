@@ -249,8 +249,21 @@ for p in example_players:
     print(wide.head())
 
 # -------------------------------------------------
-# Creating a Derived Metric (Part 2.2)
+# Creating a Derived Metric (Part 2.3)
+# Contributor: Amy Kim
 # -------------------------------------------------
+
+team_metric_average = (
+    df_selected
+    .groupby(["team", "metric"])[["value"]]
+    .mean()
+    .reset_index()
+    .rename(columns={"value": "average_value", "team": "team"})
+)
+print("\n--- Team Average Values for Selected Metrics ---")
+print(team_metric_average)
+
+
 
 # -------------------------------------------------
 # 11. Close the connection
