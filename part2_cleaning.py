@@ -253,6 +253,7 @@ for p in example_players:
 # Contributor: Amy Kim
 # -------------------------------------------------
 
+# 1. Calculates the mean value for each team (using the team column)
 team_metric_average = (
     df_selected
     .groupby(["team", "metric"])[["value"]]
