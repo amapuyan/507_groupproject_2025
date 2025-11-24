@@ -248,6 +248,9 @@ for p in example_players:
     wide = player_long_to_wide(df_selected, p, SELECTED_METRICS)
     print(wide.head())
 
+# -------------------------------------------------
+# Creating a Derived Metric (Part 2.2)
+# -------------------------------------------------
 
 # -------------------------------------------------
 # 11. Close the connection
