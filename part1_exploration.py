@@ -203,3 +203,34 @@ print(pd.read_sql(text(query_source_summary), engine))
 # Close connection
 # -------------------------
 engine.dispose()
+
+
+# ----------------------------------------------
+# Part 1.4 – Metric Summary to Assist With Choosing Metrics
+# Contributor: Xiao Hong Chen
+# Description: Summary statistics for each metric to find suitable metrics for analysis
+# ----------------------------------------------
+
+metricquery = f"""
+SELECT team, playername, metric 
+FROM {DB_TABLE}
+"""
+
+df = pd.read_sql(text(metricquery), engine)
+
+# 1. Total number of rows per metric
+metric_counts = df_all.groupby("metric").size().rename("row_count")
+
+# 2. Number of unique teams per metric
+team_counts = df_all.groupby("metric")["team"].nunique().rename("num_teams")
+
+# 3. Number of unique athletes per metric
+athlete_counts = df_all.groupby("metric")["playername"].nunique().rename("num_athletes")
+
+# Combine into one DataFrame
+metric_summary = pd.concat([metric_counts, team_counts, athlete_counts], axis=1)
+
+# Sort by row_count (most common metrics at top)
+metric_summary = metric_summary.sort_values("row_count", ascending=False)
+
+metric_summary.head(20)
