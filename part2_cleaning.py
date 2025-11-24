@@ -276,24 +276,27 @@ df_selected["percent_difference_from_team_avg"] = (
 print("\n--- Sample Athlete Measurements with Percent Difference from Team Average ---")
 print(df_selected[["team", "playername", "metric", "value", "average_value", "percent_difference_from_team_avg"]])
 
-# 3. Identify the top 5 and bottom 5 performers relative to their team mean 
+# 3. Identify the top 5 unique and bottom 5 unique performers relative to their team mean
 top_performers = (
     df_selected
     .sort_values("percent_difference_from_team_avg", ascending=False)
-    .drop_duplicates(subset=["playername", "metric"])
+    .drop_duplicates(subset=["playername"])
     .head(5)
+    [["playername", "team", "metric", "percent_difference_from_team_avg"]]
 )
 
 bottom_performers = (
     df_selected
     .sort_values("percent_difference_from_team_avg", ascending=True)
-    .drop_duplicates(subset=["playername", "metric"])
+    .drop_duplicates(subset=["playername"])
     .head(5)
+    [["playername", "team", "metric", "percent_difference_from_team_avg"]]
 )
-print("\n--- Top 5 Performers Relative to Team Average ---")
-print(top_performers[["team", "playername", "metric", "value", "average_value", "percent_difference_from_team_avg"]])
-print("\n--- Bottom 5 Performers Relative to Team Average ---")
-print(bottom_performers[["team", "playername", "metric", "value", "average_value", "percent_difference_from_team_avg"]])
+print("\n--- Top 5 Unique Performers Relative to Team Average ---")
+print(top_performers)       
+print("\n--- Bottom 5 Unique Performers Relative to Team Average ---")
+print(bottom_performers)
+
 # -------------------------------------------------
 # 11. Close the connection
 # -------------------------------------------------
