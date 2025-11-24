@@ -19,3 +19,6 @@
 
 - **Part 1 - Exploration (Xiao Hong Chen)**
   ![Part 1 - exploration](screenshots/xiaopt1connect.png)
+
+- **Part 1 - Exploration (Amy Kim)**
+  ![Part 1 - first 10 rows](screenshots/amy_connection.png)
