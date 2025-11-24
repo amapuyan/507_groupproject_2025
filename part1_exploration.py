@@ -208,29 +208,27 @@ engine.dispose()
 # ----------------------------------------------
 # Part 1.4 – Metric Summary to Assist With Choosing Metrics
 # Contributor: Xiao Hong Chen
-# Description: Summary statistics for each metric to find suitable metrics for analysis
+# Description: Summary statistics for each metric to find 5 suitable metrics for analysis
 # ----------------------------------------------
 
-metricquery = f"""
-SELECT team, playername, metric 
-FROM {DB_TABLE}
-"""
+# create csv to get overall metric summary
+query_metrics_overall = f"""
+    SELECT metric,COUNT(*) AS total_rows,
+    COUNT(DISTINCT team) AS num_teams
+    FROM {DB_TABLE}
+    GROUP BY metric
+    ORDER BY total_rows DESC
+    """
 
-df = pd.read_sql(text(metricquery), engine)
+metrics_overall = pd.read_sql(text(query_metrics_overall), engine)
+metrics_overall
 
-# 1. Total number of rows per metric
-metric_counts = df_all.groupby("metric").size().rename("row_count")
+metrics_overall.to_csv("metrics_overall.csv", index=False)
 
-# 2. Number of unique teams per metric
-team_counts = df_all.groupby("metric")["team"].nunique().rename("num_teams")
-
-# 3. Number of unique athletes per metric
-athlete_counts = df_all.groupby("metric")["playername"].nunique().rename("num_athletes")
-
-# Combine into one DataFrame
-metric_summary = pd.concat([metric_counts, team_counts, athlete_counts], axis=1)
-
-# Sort by row_count (most common metrics at top)
-metric_summary = metric_summary.sort_values("row_count", ascending=False)
-
-metric_summary.head(20)
+SELECTED_METRICS = [
+    "Jump Height(m)",
+    "Peak Propulsive Force(N)",
+    "Peak Velocity(m/s)",
+    "Propulsive Net Impulse(N.s)",
+    "mRSI",
+]

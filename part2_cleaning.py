@@ -94,9 +94,9 @@ print("\nSaved overall missing data summary to 'part2_missing_summary_overall.cs
 SELECTED_METRICS = [
     "Jump Height(m)",
     "Peak Propulsive Force(N)",
+    "Peak Velocity(m/s)",
+    "Propulsive Net Impulse(N.s)",
     "mRSI",
-    "accel_load_max",
-    "distance_total",
 ]
 
 df_selected = df[df["metric"].isin(SELECTED_METRICS)].copy()
