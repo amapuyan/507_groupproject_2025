@@ -264,7 +264,17 @@ team_metric_average = (
 print("\n--- Team Average Values for Selected Metrics ---")
 print(team_metric_average)
 
-
+# 2. For each athlete measurement, calculates their percent difference from their team's average
+df_selected = df_selected.merge(
+    team_metric_average,
+    on=["team", "metric"],
+    how="left"
+)
+df_selected["percent_difference_from_team_avg"] = (
+    (df_selected["value"] - df_selected["average_value"]) / df_selected["average_value"]
+) * 100 
+print("\n--- Sample Athlete Measurements with Percent Difference from Team Average ---")
+print(df_selected[["team", "playername", "metric", "value", "average_value", "percent_difference_from_team_avg"]].head())
 
 # -------------------------------------------------
 # 11. Close the connection
