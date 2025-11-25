@@ -9,10 +9,7 @@
 ## Screenshots (Evidence of Work)
 
 - **Part 1 – Exploration (Jonathan Jafari)**  
-  ![Part 1 – First 10 Rows](screenshots/part1_exploration_first10rows.png)
-
-- **Part 3 – Individual Athlete Viz (Jonathan Jafari)**  
-  ![Part 3 – PLAYER_680 Jump Height](screenshots/part3_player680_line_plot.png)
+  ![Part 1 – First 10 Rows](screenshots/jonathan_part1_exploration_first10rows.png)
 
 - **Part1 - Exploration (Anthony Mapuyan)**
   ![Part 1 - First 10 Rows](screenshots/part1_connect.png)
@@ -25,3 +22,4 @@
 
   - **Part 1 - Exploration (Chen)**
   ![Part 1 - first 10 rows](screenshots/chen_connection.png)
+
