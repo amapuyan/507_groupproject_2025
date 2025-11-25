@@ -3,4 +3,4 @@ sqlalchemy
 pymysql
 dotenv
 matplotlib
-scipy.stats
+scipy
