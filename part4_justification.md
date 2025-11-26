@@ -1,6 +1,6 @@
 # Part 4.1 - Performance Monitoring Flag System: Rationale
 
-We chose the three common coutermovement jump (CMJ) measurements to monitor using our flagging system: Modified Reactive Strength Index (mRSI), Jump Height (m), and Propulsive Net Impulse (N·s). We chose these metrics because they can be found frequently in the body of force plate based measurement studies on the CMJ, and there is high quality research that shows them to have good reliability.
+We chose the three common countermovement jump (CMJ) measurements to monitor using our flagging system: Modified Reactive Strength Index (mRSI), Jump Height (m), and Propulsive Net Impulse (N·s). We chose these metrics because they can be found frequently in the body of force plate based measurement studies on the CMJ, and there is high quality research that shows them to have good reliability.
 
 All thresholds were set at levels that exceeded known variability in test/re-test and reflect meaningful changes in performance (i.e., changes that would be caused by fatigue, sub-optimal recovery, etc.) rather than the day-to-day "noise" that may occur due to factors like training load, nutrition, sleep, etc.
 
