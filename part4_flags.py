@@ -41,7 +41,12 @@ df["value"] = pd.to_numeric(df["value"], errors="coerce")
 
 # Threshold 1: flag mRSI if it drops 10% below their baseline indicating that they are getting fatigued
 # Calculate baseline mRSI for each athlete
-baseline_mRSI = df[df['metric'] == 'mRSI'].groupby('playername')['value'].mean().reset_index()
+baseline_mRSI = (
+    df[df['metric'] == 'mRSI']
+    .groupby('playername')['value']
+    .median()
+    .reset_index()
+)
 baseline_mRSI.columns = ['playername', 'baseline_mRSI']
 
 # Merge baseline mRSI back into the main dataframe
@@ -55,3 +60,70 @@ team_avg_mRSI = df[df['metric'] == 'mRSI']['value'].mean()
 # Flag mRSI values that deviate more than 15% from team average
 df['mRSI_team_flag'] = ((df['metric'] == 'mRSI') & 
                         ((df['value'] < 0.85 * team_avg_mRSI) | (df['value'] > 1.15 * team_avg_mRSI))).astype(int)
+
+# Threshold 3: Jump Height drop ≥7% vs player baseline
+baseline_jh = (
+    df[df['metric'] == 'Jump Height(m)']
+    .groupby('playername')['value']
+    .median()
+    .reset_index()
+    .rename(columns={'value': 'baseline_jh'})
+)
+
+df = df.merge(baseline_jh, on='playername', how='left')
+
+df['jh_flag'] = (
+    (df['metric'] == 'Jump Height(m)') &
+    (df['value'] < 0.93 * df['baseline_jh'])
+).astype(int)
+
+# Threshold 4: Propulsive Net Impulse drop ≥7% vs player baseline
+baseline_pni = (
+    df[df['metric'] == 'Propulsive Net Impulse(N.s)']
+    .groupby('playername')['value']
+    .median()
+    .reset_index()
+    .rename(columns={'value': 'baseline_pni'})
+)
+
+df = df.merge(baseline_pni, on='playername', how='left')
+
+df['pni_flag'] = (
+    (df['metric'] == 'Propulsive Net Impulse(N.s)') &
+    (df['value'] < 0.93 * df['baseline_pni'])
+).astype(int)
+
+# ==============================
+# Build flagged athletes CSV
+# ==============================
+
+flag_cols = ['mRSI_flag', 'mRSI_team_flag', 'jh_flag', 'pni_flag']
+
+def build_flag_reason(row):
+    reasons = []
+    if row.get('mRSI_flag', 0) == 1:
+        reasons.append("mRSI drop ≥10% vs baseline")
+    if row.get('mRSI_team_flag', 0) == 1:
+        reasons.append("mRSI >15% from team average")
+    if row.get('jh_flag', 0) == 1:
+        reasons.append("Jump Height(m) drop ≥7% vs baseline")
+    if row.get('pni_flag', 0) == 1:
+        reasons.append("Propulsive Net Impulse(N.s) drop ≥7% vs baseline")
+    return "; ".join(reasons)
+
+# Keep only rows where at least one flag was triggered
+flagged = df[df[flag_cols].sum(axis=1) > 0].copy()
+
+# Create human-readable flag_reason text
+flagged['flag_reason'] = flagged.apply(build_flag_reason, axis=1)
+
+# Prepare required columns
+flagged['metric_value']   = flagged['value']
+flagged['last_test_date'] = flagged['timestamp'].dt.date.astype(str)
+
+output_cols = ['playername', 'team', 'flag_reason', 'metric_value', 'last_test_date']
+flagged_out = flagged[output_cols].drop_duplicates()
+
+# Save CSV
+flagged_out.to_csv("part4_flagged_athletes.csv", index=False)
+print("Saved flagged athletes to part4_flagged_athletes.csv")
