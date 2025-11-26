@@ -1,3 +1,6 @@
+# **Contributors:**  
+# Amy Kim & Jonathan Jafari collaborated on the development and refinement of the flagging logic implemented in `part4_flags.py`.
+
 # Research Question: How does mRSI behave as a marker of neuromuscular fatigue compared to output metrics like Jump Height and Propulsive Net Impulse over the competitive season in NCAA athletes? 
 
 # Article referenced for mRSI average range (0.208 to 0.704): https://www.researchgate.net/publication/328590949_Preliminary_Scale_of_Reference_Values_for_Evaluating_Reactive_Strength_Index-Modified_in_Male_and_Female_NCAA_Division_I_Athletes
