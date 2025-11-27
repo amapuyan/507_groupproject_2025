@@ -13,6 +13,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 import pandas as pd
+import numpy as np
 
 
 load_dotenv()
@@ -30,13 +31,20 @@ connection_string = (
 
 engine = create_engine(connection_string)
 
-df = pd.read_sql(text(f"SELECT * FROM {DB_TABLE} LIMIT 50000"), engine)
-df.head()
+query = text(f"""
+    SELECT playername, team, timestamp, metric, value
+    FROM {DB_TABLE}
+    WHERE metric IN ('mRSI', 'Jump Height(m)', 'Propulsive Net Impulse(N.s)')
+        AND value IS NOT NULL
+    LIMIT 50000
+""")
+df = pd.read_sql(query, engine, parse_dates=['timestamp'])
 
 
 # Convert timestamp to datetime (if not already)
 print("\nConverting 'timestamp' to datetime (if needed)...")
 df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+df = df.dropna(subset=['value', 'timestamp']) # Added to remove nulls after conversion
 
 # Ensure 'value' is numeric
 print("Ensuring 'value' column is numeric...")
@@ -61,8 +69,11 @@ df['mRSI_flag'] = ((df['metric'] == 'mRSI') & (df['value'] < 0.9 * df['baseline_
 # Calculate team average mRSI
 team_avg_mRSI = df[df['metric'] == 'mRSI']['value'].mean()
 # Flag mRSI values that deviate more than 15% from team average
-df['mRSI_team_flag'] = ((df['metric'] == 'mRSI') & 
-                        ((df['value'] < 0.85 * team_avg_mRSI) | (df['value'] > 1.15 * team_avg_mRSI))).astype(int)
+df['mRSI_team_flag'] = np.where(
+    is_mrsi & ((df['value'] < 0.85 * team_avg_mRSI) | (df['value'] > 1.15 * team_avg_mRSI)),
+    1,
+    0
+)
 
 # Threshold 3: Jump Height drop ≥7% vs player baseline
 baseline_jh = (
@@ -75,10 +86,11 @@ baseline_jh = (
 
 df = df.merge(baseline_jh, on='playername', how='left')
 
-df['jh_flag'] = (
-    (df['metric'] == 'Jump Height(m)') &
-    (df['value'] < 0.93 * df['baseline_jh'])
-).astype(int)
+df['jh_flag'] = np.where(
+    is_jh & (df['value'] < 0.93 * df['baseline_Jump Height(m)']),
+    1,
+    0
+)
 
 # Threshold 4: Propulsive Net Impulse drop ≥7% vs player baseline
 baseline_pni = (
@@ -91,10 +103,11 @@ baseline_pni = (
 
 df = df.merge(baseline_pni, on='playername', how='left')
 
-df['pni_flag'] = (
-    (df['metric'] == 'Propulsive Net Impulse(N.s)') &
-    (df['value'] < 0.93 * df['baseline_pni'])
-).astype(int)
+df['pni_flag'] = np.where(
+    is_pni & (df['value'] < 0.93 * df['baseline_Propulsive Net Impulse(N.s)']),
+    1,
+    0
+)
 
 # ==============================
 # Build flagged athletes CSV
@@ -121,11 +134,10 @@ flagged = df[df[flag_cols].sum(axis=1) > 0].copy()
 flagged['flag_reason'] = flagged.apply(build_flag_reason, axis=1)
 
 # Prepare required columns
-flagged['metric_value']   = flagged['value']
-flagged['last_test_date'] = flagged['timestamp'].dt.date.astype(str)
-
-output_cols = ['playername', 'team', 'flag_reason', 'metric_value', 'last_test_date']
-flagged_out = flagged[output_cols].drop_duplicates()
+flagged_out = flagged.assign(
+    metric_value=flagged['value'],
+    last_test_date=flagged['timestamp'].dt.date.astype(str)
+)[['playername', 'team', 'flag_reason', 'metric_value', 'last_test_date']].drop_duplicates()
 
 # Save CSV
 flagged_out.to_csv("part4_flagged_athletes.csv", index=False)
