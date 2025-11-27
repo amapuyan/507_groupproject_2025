@@ -1,20 +1,21 @@
 # **Contributors:**  
 # Amy Kim & Jonathan Jafari collaborated on the development and refinement of the flagging logic implemented in `part4_flags.py`.
 
-# Research Question: How does mRSI behave as a marker of neuromuscular fatigue compared to output metrics like Jump Height and Propulsive Net Impulse over the competitive season in NCAA athletes? 
+# Research Question: How does mRSI behave as a marker of neuromuscular fatigue compared to output metrics 
+# like Jump Height and Propulsive Net Impulse over the competitive season in NCAA athletes? 
 
-# Article referenced for mRSI average range (0.208 to 0.704): https://www.researchgate.net/publication/328590949_Preliminary_Scale_of_Reference_Values_for_Evaluating_Reactive_Strength_Index-Modified_in_Male_and_Female_NCAA_Division_I_Athletes
-#       Research shows 0.63 = 97th percentile in NCAA Division I athletes, 0.42 = 50th percentile, 0.21 = 3rd percentile
+# Article referenced for mRSI average range (0.208 to 0.704): 
+# https://www.researchgate.net/publication/328590949_Preliminary_Scale_of_Reference_Values_for_Evaluating_Reactive_Strength_Index-Modified_in_Male_and_Female_NCAA_Division_I_Athletes
+# Research shows 0.63 = 97th percentile in NCAA Division I athletes, 0.42 = 50th percentile, 0.21 = 3rd percentile
 
-# Typical Error (TE): Studies have reported typical error values for RSImod to be between 7.5% and 9.3%, indicating that a change larger than this range is more likely to represent a genuine physiological change rather than normal test-retest variability.
-#https://www.researchgate.net/publication/268804309_Using_Reactive_Strength_Index-Modified_as_an_Explosive_Performance_Measurement_Tool_in_Division_I_Athletes#:~:text=Finally%2C%20independent%20samples%20t%2Dtests,loaded%20countermovement%20jump%20conditions%2C%20respectively. 
+# Typical Error (TE): Studies have reported typical error values for RSImod to be between 7.5% and 9.3%
+# https://www.researchgate.net/publication/268804309_Using_Reactive_Strength_Index-Modified_as_an_Explosive_Performance_Measurement_Tool_in_Division_I_Athletes
 
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 import pandas as pd
 import numpy as np
-
 
 load_dotenv()
 
@@ -31,6 +32,7 @@ connection_string = (
 
 engine = create_engine(connection_string)
 
+# Load only the metrics we need with optimized query
 query = text(f"""
     SELECT playername, team, timestamp, metric, value
     FROM {DB_TABLE}
@@ -40,34 +42,61 @@ query = text(f"""
 """)
 df = pd.read_sql(query, engine, parse_dates=['timestamp'])
 
+engine.dispose()
 
-# Convert timestamp to datetime (if not already)
-print("\nConverting 'timestamp' to datetime (if needed)...")
-df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-df = df.dropna(subset=['value', 'timestamp']) # Added to remove nulls after conversion
+print("\nCleaning data...")
+# Remove any null values
+df = df.dropna(subset=['value', 'timestamp'])
 
 # Ensure 'value' is numeric
-print("Ensuring 'value' column is numeric...")
 df["value"] = pd.to_numeric(df["value"], errors="coerce")
+df = df.dropna(subset=['value'])  # Remove any that failed conversion
 
-# Threshold 1: flag mRSI if it drops 10% below their baseline indicating that they are getting fatigued
-# Calculate baseline mRSI for each athlete
-baseline_mRSI = (
-    df[df['metric'] == 'mRSI']
-    .groupby('playername')['value']
-    .median()
-    .reset_index()
+# Pre-create boolean masks for better performance
+is_mrsi = df['metric'] == 'mRSI'
+is_jh = df['metric'] == 'Jump Height(m)'
+is_pni = df['metric'] == 'Propulsive Net Impulse(N.s)'
+
+print(f"Loaded {len(df)} records for {df['playername'].nunique()} athletes")
+
+# ==============================
+# Calculate baselines for all metrics
+# ==============================
+print("Calculating baselines...")
+
+# OPTIMIZED: Single pivot operation instead of 3 separate groupby operations
+baseline_metrics = df.pivot_table(
+    index='playername',
+    columns='metric',
+    values='value',
+    aggfunc='median'
 )
-baseline_mRSI.columns = ['playername', 'baseline_mRSI']
 
-# Merge baseline mRSI back into the main dataframe
-df = df.merge(baseline_mRSI, on='playername', how='left')
-# Flag mRSI values that are 10% below baseline
-df['mRSI_flag'] = ((df['metric'] == 'mRSI') & (df['value'] < 0.9 * df['baseline_mRSI'])).astype(int)
+# Rename columns to match original naming convention
+baseline_metrics = baseline_metrics.rename(columns={
+    'mRSI': 'baseline_mRSI',
+    'Jump Height(m)': 'baseline_jh',
+    'Propulsive Net Impulse(N.s)': 'baseline_pni'
+})
+
+# OPTIMIZED: Single merge operation instead of 3 separate merges
+df = df.merge(baseline_metrics, left_on='playername', right_index=True, how='left')
 
 # Threshold 2: Deviation from team average mRSI by more than 15%
 # Calculate team average mRSI
-team_avg_mRSI = df[df['metric'] == 'mRSI']['value'].mean()
+team_avg_mRSI = df[is_mrsi]['value'].mean()
+print(f"Team average mRSI: {team_avg_mRSI:.3f}")
+
+print("Applying flag thresholds...")
+
+# Threshold 1: flag mRSI if it drops 10% below their baseline indicating that they are getting fatigued
+df['mRSI_flag'] = np.where(
+    is_mrsi & (df['value'] < 0.9 * df['baseline_mRSI']),
+    1,
+    0
+)
+
+# Threshold 2: Deviation from team average mRSI by more than 15%
 # Flag mRSI values that deviate more than 15% from team average
 df['mRSI_team_flag'] = np.where(
     is_mrsi & ((df['value'] < 0.85 * team_avg_mRSI) | (df['value'] > 1.15 * team_avg_mRSI)),
@@ -76,35 +105,15 @@ df['mRSI_team_flag'] = np.where(
 )
 
 # Threshold 3: Jump Height drop ≥7% vs player baseline
-baseline_jh = (
-    df[df['metric'] == 'Jump Height(m)']
-    .groupby('playername')['value']
-    .median()
-    .reset_index()
-    .rename(columns={'value': 'baseline_jh'})
-)
-
-df = df.merge(baseline_jh, on='playername', how='left')
-
 df['jh_flag'] = np.where(
-    is_jh & (df['value'] < 0.93 * df['baseline_Jump Height(m)']),
+    is_jh & (df['value'] < 0.93 * df['baseline_jh']), 
     1,
     0
 )
 
 # Threshold 4: Propulsive Net Impulse drop ≥7% vs player baseline
-baseline_pni = (
-    df[df['metric'] == 'Propulsive Net Impulse(N.s)']
-    .groupby('playername')['value']
-    .median()
-    .reset_index()
-    .rename(columns={'value': 'baseline_pni'})
-)
-
-df = df.merge(baseline_pni, on='playername', how='left')
-
 df['pni_flag'] = np.where(
-    is_pni & (df['value'] < 0.93 * df['baseline_Propulsive Net Impulse(N.s)']),
+    is_pni & (df['value'] < 0.93 * df['baseline_pni']),
     1,
     0
 )
@@ -112,6 +121,7 @@ df['pni_flag'] = np.where(
 # ==============================
 # Build flagged athletes CSV
 # ==============================
+print("Generating flagged athletes report...")
 
 flag_cols = ['mRSI_flag', 'mRSI_team_flag', 'jh_flag', 'pni_flag']
 
@@ -130,15 +140,32 @@ def build_flag_reason(row):
 # Keep only rows where at least one flag was triggered
 flagged = df[df[flag_cols].sum(axis=1) > 0].copy()
 
-# Create human-readable flag_reason text
-flagged['flag_reason'] = flagged.apply(build_flag_reason, axis=1)
+if len(flagged) > 0:
+    # Create human-readable flag_reason text
+    flagged['flag_reason'] = flagged.apply(build_flag_reason, axis=1)
+    
+    # Prepare required columns
+    flagged_out = flagged.assign(
+        metric_value=flagged['value'],
+        last_test_date=flagged['timestamp'].dt.date.astype(str)
+    )[['playername', 'team', 'flag_reason', 'metric_value', 'last_test_date']].drop_duplicates()
+    
+    # Sort for easier review
+    flagged_out = flagged_out.sort_values(['playername', 'last_test_date'])
+    
+    # Save CSV
+    flagged_out.to_csv("part4_flagged_athletes.csv", index=False)
+    
+    print(f"\n✓ Saved {len(flagged_out)} flagged records to part4_flagged_athletes.csv")
+    print(f"✓ {flagged_out['playername'].nunique()} unique athletes flagged")
+    
+    # Summary statistics
+    print("\nFlag breakdown:")
+    print(f"  - mRSI baseline drop: {flagged['mRSI_flag'].sum()} instances")
+    print(f"  - mRSI team deviation: {flagged['mRSI_team_flag'].sum()} instances")
+    print(f"  - Jump Height drop: {flagged['jh_flag'].sum()} instances")
+    print(f"  - Propulsive Net Impulse drop: {flagged['pni_flag'].sum()} instances")
+else:
+    print("\n✓ No athletes currently meet flag criteria")
 
-# Prepare required columns
-flagged_out = flagged.assign(
-    metric_value=flagged['value'],
-    last_test_date=flagged['timestamp'].dt.date.astype(str)
-)[['playername', 'team', 'flag_reason', 'metric_value', 'last_test_date']].drop_duplicates()
-
-# Save CSV
-flagged_out.to_csv("part4_flagged_athletes.csv", index=False)
-print("Saved flagged athletes to part4_flagged_athletes.csv")
+print("\nAnalysis complete!")
