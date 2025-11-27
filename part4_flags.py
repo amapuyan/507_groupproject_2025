@@ -1,5 +1,6 @@
 # **Contributors:**  
 # Amy Kim & Jonathan Jafari collaborated on the development and refinement of the flagging logic implemented in `part4_flags.py`.
+# Chenkun Xiang contributed to the optimization of data processing and query efficiency.
 
 # Research Question: How does mRSI behave as a marker of neuromuscular fatigue compared to output metrics 
 # like Jump Height and Propulsive Net Impulse over the competitive season in NCAA athletes? 
@@ -72,51 +73,77 @@ baseline_metrics = df.pivot_table(
     aggfunc='median'
 )
 
-# Rename columns to match original naming convention
-baseline_metrics = baseline_metrics.rename(columns={
+# Safely rename columns - only rename columns that actually exist
+rename_mapping = {
     'mRSI': 'baseline_mRSI',
     'Jump Height(m)': 'baseline_jh',
     'Propulsive Net Impulse(N.s)': 'baseline_pni'
-})
+}
+# Only rename columns that exist in the dataframe
+existing_renames = {k: v for k, v in rename_mapping.items() if k in baseline_metrics.columns}
+baseline_metrics = baseline_metrics.rename(columns=existing_renames)
 
 # OPTIMIZED: Single merge operation instead of 3 separate merges
 df = df.merge(baseline_metrics, left_on='playername', right_index=True, how='left')
 
+# Check which baseline columns actually exist
+print(f"Available baseline columns: {[col for col in df.columns if 'baseline_' in col]}")
+
 # Threshold 2: Deviation from team average mRSI by more than 15%
 # Calculate team average mRSI
-team_avg_mRSI = df[is_mrsi]['value'].mean()
-print(f"Team average mRSI: {team_avg_mRSI:.3f}")
+if is_mrsi.sum() > 0:
+    team_avg_mRSI = df[is_mrsi]['value'].mean()
+    print(f"Team average mRSI: {team_avg_mRSI:.3f}")
+else:
+    team_avg_mRSI = 0
+    print("Warning: No mRSI data available")
 
 print("Applying flag thresholds...")
 
 # Threshold 1: flag mRSI if it drops 10% below their baseline indicating that they are getting fatigued
-df['mRSI_flag'] = np.where(
-    is_mrsi & (df['value'] < 0.9 * df['baseline_mRSI']),
-    1,
-    0
-)
+if 'baseline_mRSI' in df.columns:
+    df['mRSI_flag'] = np.where(
+        is_mrsi & (df['value'] < 0.9 * df['baseline_mRSI']),
+        1,
+        0
+    )
+else:
+    df['mRSI_flag'] = 0
+    print("Warning: No mRSI baseline data available")
 
 # Threshold 2: Deviation from team average mRSI by more than 15%
 # Flag mRSI values that deviate more than 15% from team average
-df['mRSI_team_flag'] = np.where(
-    is_mrsi & ((df['value'] < 0.85 * team_avg_mRSI) | (df['value'] > 1.15 * team_avg_mRSI)),
-    1,
-    0
-)
+if is_mrsi.sum() > 0:
+    df['mRSI_team_flag'] = np.where(
+        is_mrsi & ((df['value'] < 0.85 * team_avg_mRSI) | (df['value'] > 1.15 * team_avg_mRSI)),
+        1,
+        0
+    )
+else:
+    df['mRSI_team_flag'] = 0
+    print("Warning: No mRSI data available for team average")
 
 # Threshold 3: Jump Height drop ≥7% vs player baseline
-df['jh_flag'] = np.where(
-    is_jh & (df['value'] < 0.93 * df['baseline_jh']), 
-    1,
-    0
-)
+if 'baseline_jh' in df.columns:
+    df['jh_flag'] = np.where(
+        is_jh & (df['value'] < 0.93 * df['baseline_jh']), 
+        1,
+        0
+    )
+else:
+    df['jh_flag'] = 0
+    print("Warning: No Jump Height baseline data available")
 
 # Threshold 4: Propulsive Net Impulse drop ≥7% vs player baseline
-df['pni_flag'] = np.where(
-    is_pni & (df['value'] < 0.93 * df['baseline_pni']),
-    1,
-    0
-)
+if 'baseline_pni' in df.columns:
+    df['pni_flag'] = np.where(
+        is_pni & (df['value'] < 0.93 * df['baseline_pni']),
+        1,
+        0
+    )
+else:
+    df['pni_flag'] = 0
+    print("Warning: No Propulsive Net Impulse baseline data available")
 
 # ==============================
 # Build flagged athletes CSV
