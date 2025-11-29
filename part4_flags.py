@@ -41,6 +41,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 load_dotenv()
 
@@ -341,8 +342,23 @@ table2 = pd.DataFrame({
 print("\nFlagging Summary (Table 2):")
 print(table2)
 
-
-
+# ==============================
+# Visualization: Bar Chart of Flag Frequencies
+# ==============================
+print("\nGenerating flag frequency bar chart...")
+plt.figure()
+plt.bar(
+    ["mRSI Baseline", "mRSI Team", "Jump Height"],
+    [
+        flagged[COL_MRSI_FLAG].sum(),
+        flagged[COL_MRSI_TEAM_FLAG].sum(),
+        flagged[COL_JH_FLAG].sum()
+    ]
+)
+plt.xlabel("Metric")
+plt.ylabel("Number of Flagged Instances")
+plt.title("Frequency of Neuromuscular Fatigue Flags by Metric")
+plt.show()
 
 
 
