@@ -1,6 +1,7 @@
 # **Contributors:**  
 # Amy Kim & Jonathan Jafari collaborated on the development and refinement of the flagging logic implemented in `part4_flags.py`.
 # Chenkun Xiang contributed to the optimization of data processing and query efficiency.
+# Xiao Hong Chen contributed with making tables summarizing the flagging results, used in part4_research_synthesis.pdf.
 
 # ==============================
 # Research Question: 
@@ -287,5 +288,62 @@ if len(flagged) > 0:
     print(f"  - Propulsive Net Impulse drop: {flagged[COL_PNI_FLAG].sum()} instances")
 else:
     print("\n✓ No athletes currently meet flag criteria")
+
+# ==============================
+# Generate Summary Tables
+# ==============================
+print("\nGenerating summary tables...")
+
+table1 = pd.DataFrame({
+    "Characteristic": [
+        "Total CMJ records analyzed",
+        "Unique athletes",
+        "Unique teams",
+        "Available CMJ metrics",
+        "Baseline method",
+        "Study design",
+        "Monitoring period"
+    ],
+    "Value": [
+        len(df),
+        df['playername'].nunique(),
+        df['team'].nunique(),
+        ", ".join(sorted(available_metrics)),
+        "Median of all available tests per athlete",
+        "Longitudinal, observational",
+        "Competitive seasons (2018–2025)"
+    ]
+})
+
+print("\nDataset Summary (Table 1):")
+print(table1)
+
+
+table2 = pd.DataFrame({
+        "Flag Type": [
+            "mRSI baseline drop (≥10% vs baseline)",
+            "mRSI team deviation (>15% from team average)",
+            "Jump Height baseline drop (≥7% vs baseline)",
+            "Propulsive Net Impulse drop (≥7% vs baseline)",
+            "Total flagged tests",
+            "Unique athletes flagged"
+        ],
+        "Number of Flagged Instances": [
+            int(flagged[COL_MRSI_FLAG].sum()),
+            int(flagged[COL_MRSI_TEAM_FLAG].sum()),
+            int(flagged[COL_JH_FLAG].sum()),
+            int(flagged[COL_PNI_FLAG].sum()),
+            int(len(flagged_out)),
+            int(flagged_out["playername"].nunique())
+        ]
+    })
+
+print("\nFlagging Summary (Table 2):")
+print(table2)
+
+
+
+
+
 
 print("\nAnalysis complete!")

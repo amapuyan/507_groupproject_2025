@@ -4,3 +4,6 @@ pymysql
 dotenv
 matplotlib
 scipy
+seaborn
+numpy
+
