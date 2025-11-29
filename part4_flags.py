@@ -363,3 +363,68 @@ plt.show()
 
 
 print("\nAnalysis complete!")
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# ==============================
+# CLEAN GROUP-LEVEL VISUALIZATION
+# ==============================
+
+df_plot = df.copy()
+
+# Normalize to individual baselines
+df_plot.loc[is_mrsi, "value_norm"] = df_plot.loc[is_mrsi, "value"] / df_plot.loc[is_mrsi, COL_BASELINE_MRSI]
+df_plot.loc[is_jh, "value_norm"]   = df_plot.loc[is_jh, "value"]   / df_plot.loc[is_jh, COL_BASELINE_JH]
+
+df_plot = df_plot.dropna(subset=["value_norm"])
+
+# Relative time alignment
+df_plot["days_since_start"] = (
+    df_plot.groupby("playername")["timestamp"]
+    .transform(lambda x: (x - x.min()).dt.days)
+)
+
+df_plot["week"] = (df_plot["days_since_start"] // 7).astype(int)
+
+# -------- KEY FIX 1: limit to dense data window --------
+MAX_WEEK = 120  # ~2.5 seasons (clean + interpretable)
+df_plot = df_plot[df_plot["week"] <= MAX_WEEK]
+
+# -------- KEY FIX 2: trim extreme values (winsorize) -----
+df_plot["value_norm"] = df_plot["value_norm"].clip(lower=0.5, upper=1.5)
+
+# Aggregate weekly
+group_ts = (
+    df_plot
+    .groupby(["week", "metric"])["value_norm"]
+    .mean()
+    .reset_index()
+)
+
+# -------- KEY FIX 3: rolling smoothing ------------------
+group_ts["smooth"] = (
+    group_ts
+    .groupby("metric")["value_norm"]
+    .transform(lambda x: x.rolling(window=4, min_periods=1).mean())
+)
+
+# ----------------- PLOT --------------------------------
+plt.figure(figsize=(10, 5))
+
+for metric, label in [(METRIC_MRSI, "mRSI"), (METRIC_JH, "Jump Height")]:
+    subset = group_ts[group_ts["metric"] == metric]
+    plt.plot(
+        subset["week"],
+        subset["smooth"],
+        label=label,
+        linewidth=2
+    )
+
+plt.axhline(1.0, linestyle="--")
+plt.xlabel("Weeks Since First Test")
+plt.ylabel("Relative Performance (Baseline = 1.0)")
+plt.title("Smoothed Group-Averaged Changes in mRSI and Jump Height")
+plt.legend()
+plt.tight_layout()
+plt.show()
